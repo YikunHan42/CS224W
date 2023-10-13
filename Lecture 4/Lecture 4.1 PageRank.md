@@ -96,7 +96,7 @@ You might wonder: Let’s just use Gaussian elimination to solve this system of 
 
 - Stochastic adjacency matrix $M$  
     - $d_i$ is the outdegree of node $i$
-    - If  $j \rightarrow i$ , then  $M_{ij}=\frac{1}{d_j} 
+    - If  $j \rightarrow i$ , then  $M_{ij}=\frac{1}{d_j}$ 
 
         - $M$ is a column stochastic matrix
             - Columns sum to $1$
@@ -159,7 +159,7 @@ $$
 ## Eigenvector Formulation
 
 - The flow equation:
-  - $1 \cdot \r=\M \cdot r$
+  - $1 \cdot r=M \cdot r$
 
 
 - **So the rank vector $r$ is an eigenvector of the stochastic adj. matrix $M$(with eigenvalue $1$)**
