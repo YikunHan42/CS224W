@@ -106,7 +106,7 @@ How do we compute the summary  $z_{v}$  of labels of  $v^{\prime}$ s neighbors $
 
 ![Example Web Page Classification 3](Example Web Page Classification 3.png)
 
-Here we use current label rather than ground truth (e.g.  nodes in the upper left corner $O=\[1, 0\]$) 
+Here we use current label rather than ground truth (e.g.  nodes in the upper left corner $O=[1, 0]$) 
 
 ![Iterative Classifier Step 1](Iterative Classifier Step 1.png)
 
