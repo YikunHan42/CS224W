@@ -137,7 +137,7 @@ $$
 
 
     - **Stage 2**: Further aggregate over the node itself
-
+    
       - $$
         \mathbf{h}_{v}^{(l)} \leftarrow \sigma\left(\mathbf{w}^{(l)} \cdot \operatorname{CONCAT}\left(\mathbf{h}_{v}^{(l-1)}, \mathbf{h}_{N(v)}^{(l)}\right)\right)
         $$
@@ -198,3 +198,204 @@ $$
     - The attention $a_{vu}$ focuses on the important parts of the input data and fades out the rest.
         - **Idea:** the NN should devote more computing power on that small but important part of the data.
         - Which part of the data is more important depends on the context and is learned through training.
+
+## Graph Attention Networks
+
+Can we do better than simple neighborhood aggregation?
+
+Can we let weighting factors $\alpha_{v u}$ to be learned?
+- Goal: Specify **arbitrary importance** to different neighbors of each node in the graph
+- Idea: Compute embedding $\boldsymbol{h}_{v}^{(l)}$ of each node in the graph following an **attention strategy**:
+  - Nodes attend over their neighborhoods' message
+  - Implicitly specifying different weights to different nodes in a neighborhood
+
+## Attention Mechanism (1)
+
+- Let $\alpha_{v u}$ be computed as a byproduct of an **attention mechanism $a$**:
+
+  - (1) Let $a$ compute attention coefficients $e_{v u}$ across pairs of nodes $u$, $v$ based on their messages:_
+
+    - $$
+      e_{v u}=a\left(\mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}, \mathbf{W}^{(l)} \boldsymbol{h}_{v}^{(l-1)}\right)
+      $$
+
+    - $e_{v u}$ indicates the importance of  $u^{\prime}$s  message to node $v$ 
+
+    - ![Attention Mechanism 1](Attention Mechanism 1.png)
+
+
+## Attention Mechanism (2)
+
+- Normalize $e_{v u}$ into the **final attention weight $ \alpha_{v u}$**
+
+  - Use the softmax function, so that $\sum_{u \in N(v)} \alpha_{v u}=1$:
+
+    - $$
+      \alpha_{v u}=\frac{\exp \left(e_{v u}\right)}{\sum_{k \in N(v)} \exp \left(e_{v k}\right)}
+      $$
+
+
+
+
+- Weighted sum based on the **final attention weight** $\alpha_{v u}$
+
+  - $$
+    \mathbf{h}_{v}^{(l)}=\sigma\left(\sum_{u \in N(v)} \alpha_{v u} \mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}\right)
+    $$
+
+  -  
+
+  - Weighted sum using $\alpha_{A B}, \alpha_{A C}, \alpha_{A D}$:
+
+    - $$
+      
+            \mathbf{h}_{A}^{(l)}=\sigma\left(\alpha_{A B} \mathbf{W}^{(l)} \mathbf{h}_{B}^{(l-1)}+\alpha_{A C} \mathbf{W}^{(l)} \mathbf{h}_{C}^{(l-1)}+\right. 
+            \left.\alpha_{A D} \mathbf{W}^{(l)} \mathbf{h}_{D}^{(l-1)}\right)
+      $$
+
+    - ![Attention Mechanism 2](Attention Mechanism 2.png)
+
+
+## Attention Mechanism (3)
+
+- What is the form of attention mechanism $a$?
+
+  - The approach is agnostic to the choice of $a$ 
+
+    - E.g., use a simple single-layer neural network
+
+      - $a$ have trainable parameters (weights in the Linear layer)
+
+      - ![Attention Mechanism 3](Attention Mechanism 3.png)
+
+      - $$
+        
+        e_{A B}=a\left(\mathbf{W}^{(l)} \mathbf{h}_{A}^{(l-1)}, \mathbf{W}^{(l)} \mathbf{h}_{B}^{(l-1)}\right) 
+        =\operatorname{Linear}\left(\operatorname{Concat}\left(\mathbf{W}^{(l)} \mathbf{h}_{A}^{(l-1)}, \mathbf{W}^{(l)} \mathbf{h}_{B}^{(l-1)}\right)\right)
+        $$
+  - Parameters of $a$ are trained jointly:
+
+    - Learn the parameters together with weight matrices (i.e., other parameter of the neural net $W^{(L)}$)  in an end-to-end fashion
+
+## Attention Mechanism (4)
+
+- Multi-head attention: Stabilizes the learning process of attention mechanism
+
+  - Create **multiple attention scores** (each replica with a different set of parameters):
+
+  - $$
+    \begin{aligned}
+    \mathbf{h}_{v}^{(l)}[1] & =\sigma\left(\sum_{u \in N(v)} \alpha_{v u}^{1} \mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}\right) \\
+    \mathbf{h}_{v}^{(l)}[2] & =\sigma\left(\sum_{u \in N(v)} \alpha_{v u}^{2} \mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}\right) \\
+    \mathbf{h}_{v}^{(l)}[3] & =\sigma\left(\sum_{u \in N(v)} \alpha_{v u}^{3} \mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}\right)
+    \end{aligned}
+    $$
+
+  - 
+
+  - Outputs are aggregated:
+
+    - By concatenation or summation
+
+    - $$
+      \mathbf{h}_{v}^{(l)}=\operatorname{AGG}\left(\mathbf{h}_{v}^{(l)}[1], \mathbf{h}_{v}^{(l)}[2], \mathbf{h}_{v}^{(l)}[3]\right)
+      $$
+
+
+## Benefits of Attention Mechanism
+
+- Key benefit: Allows for (implicitly) specifying **different importance values $\left(\alpha_{v u}\right)$ to different neighbors**
+- Computationally efficient:
+  - Computation of attentional coefficients can be parallelized across all edges of the graph
+  - Aggregation may be parallelized across all nodes
+- Storage efficient:
+  - Sparse matrix operations do not require more than $O(V+E)$ entries to be stored
+  - **Fixed** number of parameters, irrespective of graph size
+- Localized:
+  - Only **attends over local network neighborhoods**
+- Inductive capability:
+  - It is a shared edge-wise mechanism
+  - It does not depend on the global graph structure
+
+## GAT Example: Cora Citation Net
+
+![GAT Example](GAT Example.png)
+
+- t-SNE plot of GAT-based node embeddings:
+  - Node color: 7 publication classes
+  - Edge thickness: Normalized attention coefficients between nodes $i$ and $j$, across eight attention heads, $\sum_{k}\left(\alpha_{i j}^{k}+\alpha_{j i}^{k}\right)$
+
+## GNN Layer in Practice
+- In practice, these classic GNN layers are a great starting poin
+  - We can often get better performance by **considering a general GNN layer design**
+  - Concretely, we can **include modern deep learning modules** that proved to be useful in many domains
+  - ![GNN Layer in Practice](GNN Layer in Practice.png)
+- Many modern deep learning modules can be incorporated into a GNN layer
+  - Batch Normalization:
+    - Stabilize neural network training
+  - Dropout:
+    - Prevent overfitting
+  - Attention/Gating:
+    - Control the importance of a message
+  - More:
+    - Any other useful deep learning modules
+
+## Batch Normalization
+
++ Goal: Stabilize neural networks training
++ Idea: Given a batch of inputs (node embeddings)
+  + Re-center the node embeddings into zero mean
+  + Re-scale the variance into unit variance
+  + ![Batch Normalization](Batch Normalization.png)
+
+## Dropout
+- Goal: Regularize a neural net to prevent overfitting.
+- Idea:
+  - During training: with some probability $p$, randomly set neurons to zero (turn off)
+  - During testing: Use all the neurons for computation
+  - ![Dropout](Dropout.png)
+
+## Dropout for GNNs
+
+- In GNN, Dropout is applied to the linear layer in the message function 
+  - A simple message function with linear layer: $\mathbf{m}_{u}^{(l)}=\mathbf{W}^{(l)} \mathbf{h}_{u}^{(l-1)}$
+  - ![Dropout for GNNs](Dropout for GNNs.png)
+
+## Activation (Non-linearity)
+
+Apply activation to $i$-th dimension of embedding $x$ 
+
+- Rectified linear unit (ReLU)
+
+  - $$
+    \operatorname{ReLU}\left(\mathbf{x}_{i}\right)=\max \left(\mathbf{x}_{i}, 0\right)
+    $$
+
+  - Most commonly used
+
+
+- Sigmoid
+
+  - $$
+    \sigma\left(\mathbf{x}_{i}\right)=\frac{1}{1+e^{-\mathbf{x}_{i}}}
+    $$
+
+  - Used only when you want to restrict the range of your embeddings
+
+- Parametric ReLU
+
+  - $$
+    \operatorname{PReLU}\left(\mathbf{x}_{i}\right)=\max \left(\mathbf{x}_{i}, 0\right)+a_{i} \min \left(\mathbf{x}_{i}, 0\right)
+    $$
+
+  - $a_{i}$ is a trainable parameter
+
+  - **Empirically performs better than ReLU**
+
+- ![Activation](Activation.png)
+
+## GNN Layer in Practice
+- Summary: Modern deep learning modules can be included into a GNN layer for better performance
+- Designing novel GNN layers is still an active research frontier!
+- Suggested resources: You can explore diverse GNN designs or try out your own ideas in `GraphGym`
+
